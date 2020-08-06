@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--program_generator', default=None)
 parser.add_argument('--execution_engine', default=None)
 parser.add_argument('--baseline_model', default=None)
-parser.add_argument('--use_gpu', default=1, type=int)
+parser.add_argument('--use_gpu', default=0, type=int)
 
 # For running on a preprocessed dataset
 parser.add_argument('--input_question_h5', default='data/val_questions.h5')
@@ -187,7 +187,8 @@ def build_cnn(args, dtype):
     raise ValueError('Invalid model "%s"' % args.cnn_model)
   if not 'resnet' in args.cnn_model:
     raise ValueError('Feature extraction only supports ResNets')
-  whole_cnn = getattr(torchvision.models, args.cnn_model)(pretrained=True)
+  whole_cnn = getattr(torchvision.models, args.cnn_model)()
+  whole_cnn.load_state_dict(torch.load('models/torchvision/%s.pth' % args.cnn_model))
   layers = [
     whole_cnn.conv1,
     whole_cnn.bn1,
