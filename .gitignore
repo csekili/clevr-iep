@@ -4,3 +4,6 @@ data/
 *.swp
 .ipynb_checkpoints/
 models/
+input/
+output/
+scratch/

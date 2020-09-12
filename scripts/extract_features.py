@@ -17,6 +17,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--input_image_dir', required=True)
 parser.add_argument('--max_images', default=None, type=int)
 parser.add_argument('--output_h5_file', required=True)
+parser.add_argument('--use_gpu', default=0, type=int)
 
 parser.add_argument('--image_height', default=224, type=int)
 parser.add_argument('--image_width', default=224, type=int)
@@ -31,7 +32,8 @@ def build_model(args):
     raise ValueError('Invalid model "%s"' % args.model)
   if not 'resnet' in args.model:
     raise ValueError('Feature extraction only supports ResNets')
-  cnn = getattr(torchvision.models, args.model)(pretrained=True)
+  cnn = getattr(torchvision.models, args.model)()
+  cnn.load_state_dict(torch.load('models/torchvision/%s.pth' % args.model))
   layers = [
     cnn.conv1,
     cnn.bn1,

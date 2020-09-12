@@ -20,7 +20,7 @@ import numpy as np
 
 import iep.programs
 from iep.preprocess import tokenize, encode, build_vocab
-
+import iep.utils as utils
 
 """
 Preprocessing script for CLEVR question files.
@@ -31,6 +31,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--mode', default='prefix',
                     choices=['chain', 'prefix', 'postfix'])
 parser.add_argument('--input_questions_json', required=True)
+parser.add_argument('--input_vocab_pt', default = '')
 parser.add_argument('--input_vocab_json', default='')
 parser.add_argument('--expand_vocab', default=0, type=int)
 parser.add_argument('--unk_threshold', default=1, type=int)
@@ -55,8 +56,8 @@ def program_to_str(program, mode):
 
 
 def main(args):
-  if (args.input_vocab_json == '') and (args.output_vocab_json == ''):
-    print('Must give one of --input_vocab_json or --output_vocab_json')
+  if (args.input_vocab_json == '') and (args.output_vocab_json == '') and (args.input_vocab_pt == ''): 
+    print('Must give one of --input_vocab_json or --output_vocab_json or --input_vocab_pt')
     return
 
   print('Loading data')
@@ -64,7 +65,7 @@ def main(args):
     questions = json.load(f)['questions']
 
   # Either create the vocab or load it from disk
-  if args.input_vocab_json == '' or args.expand_vocab == 1:
+  if (args.input_vocab_json == '' and args.input_vocab_pt == '') or args.expand_vocab == 1:
     print('Building vocab')
     if 'answer' in questions[0]:
       answer_token_to_idx = build_vocab(
@@ -103,6 +104,22 @@ def main(args):
           vocab['question_token_to_idx'][word] = idx
           num_new_words += 1
       print('Found %d new words' % num_new_words)
+
+  elif args.input_vocab_pt != '':
+      print('Loading vocab')
+      if args.expand_vocab == 1:
+        new_vocab = vocab
+      vocab = utils.load_cpu(args.input_vocab_pt)['vocab']
+      
+      if args.expand_vocab == 1:
+        num_new_words = 0
+        for word in new_vocab['question_token_to_idx']:
+          if word not in vocab['question_token_to_idx']:
+            print('Found new word %s' % word)
+            idx = len(vocab['question_token_to_idx'])
+            vocab['question_token_to_idx'][word] = idx
+            num_new_words += 1
+        print('Found %d new words' % num_new_words)
 
   if args.output_vocab_json != '':
     with open(args.output_vocab_json, 'w') as f:
