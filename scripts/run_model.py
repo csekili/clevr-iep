@@ -229,9 +229,10 @@ def run_baseline_batch(args, model, loader, dtype):
     feats_var = Variable(feats.type(dtype), volatile=True)
     scores = model(questions_var, feats_var)
     probs = F.softmax(scores)
-    correct = (preds == answers)
 
     _, preds = scores.data.cpu().max(1)
+    correct = (preds == answers)
+
     all_scores.append(scores.data.cpu().clone())
     all_probs.append(probs.data.cpu().clone())
     all_preds.append(preds.data.cpu().clone())
