@@ -235,8 +235,8 @@ def run_baseline_batch(args, model, loader, dtype):
 
     all_scores.append(scores.data.cpu().clone())
     all_probs.append(probs.data.cpu().clone())
-    all_preds.append(preds.data.cpu().clone())
-    all_corr.append(correct.data.cpu().clone())
+    all_preds.append(preds.clone())
+    all_corr.append(correct.clone())
 
     num_correct += correct.sum()
     num_samples += preds.size(0)
@@ -264,8 +264,7 @@ def run_our_model_batch(args, program_generator, execution_engine, loader, dtype
   execution_engine.type(dtype)
   execution_engine.eval()
 
-  all_scores, all_programs = [], []
-  all_probs = []
+  all_programs, all_scores, all_probs, all_preds, all_corr = [], [], [], [], []
   num_correct, num_samples = 0, 0
   for batch in loader:
     questions, images, feats, answers, programs, program_lists = batch
@@ -284,11 +283,15 @@ def run_our_model_batch(args, program_generator, execution_engine, loader, dtype
     probs = F.softmax(scores)
 
     _, preds = scores.data.cpu().max(1)
+    correct = (preds == answers)
+
     all_programs.append(programs_pred.data.cpu().clone())
     all_scores.append(scores.data.cpu().clone())
     all_probs.append(probs.data.cpu().clone())
+    all_preds.append(preds.clone())
+    all_corr.append(correct.clone())
 
-    num_correct += (preds == answers).sum()
+    num_correct += correct.sum()
     num_samples += preds.size(0)
     print('Ran %d samples' % num_samples)
 
@@ -298,12 +301,16 @@ def run_our_model_batch(args, program_generator, execution_engine, loader, dtype
   all_scores = torch.cat(all_scores, 0)
   all_probs = torch.cat(all_probs, 0)
   all_programs = torch.cat(all_programs, 0)
+  all_preds = torch.cat(all_preds, 0)
+  all_corr = torch.cat(all_corr, 0)
   if args.output_h5 is not None:
     print('Writing output to "%s"' % args.output_h5)
     with h5py.File(args.output_h5, 'w') as fout:
       fout.create_dataset('scores', data=all_scores.numpy())
       fout.create_dataset('probs', data=all_probs.numpy())
       fout.create_dataset('predicted_programs', data=all_programs.numpy())
+      fout.create_dataset('preds', data=all_preds.numpy())
+      fout.create_dataset('correct', data = all_corr.numpy())
 
 
 if __name__ == '__main__':
