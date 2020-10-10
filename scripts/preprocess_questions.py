@@ -156,7 +156,18 @@ def main(args):
       programs_encoded.append(program_encoded)
 
     if 'answer' in q:
-      answers.append(vocab['answer_token_to_idx'][q['answer']])
+      answer = q['answer']
+      if answer is True:
+        answer = 'yes'
+      elif answer is False:
+        answer = 'no'
+      else:
+        answer = str(answer)
+      if answer in vocab['answer_token_to_idx']:
+        answers.append(vocab['answer_token_to_idx'][answer])
+      else:
+        print('Answer %s to %s is missing' % (answer, question))
+        answers.append(0)
 
   # Pad encoded questions and programs
   max_question_length = max(len(x) for x in questions_encoded)
